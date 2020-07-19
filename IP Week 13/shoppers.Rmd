@@ -1,0 +1,347 @@
+---
+title: "IP WEEK 13"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Business Understanding
+Kira Plastinina (Links to an external site.) is a Russian brand that is sold through a defunct chain of retail stores in Russia, Ukraine, Kazakhstan, Belarus, China, Philippines, and Armenia. The brand's Sales and Marketing team would like to understand their customer's behavior from data that they have collected over the past year. More specifically, they would like to learn the characteristics of customer groups.
+### Deliverables
+Perform clustering stating insights drawn from your analysis and visualizations.
+
+Upon implementation, provide comparisons between the approaches learned this week i.e. K-Means clustering vs Hierarchical clustering highlighting the strengths and limitations of each approach in the context of your analysis. 
+
+## Data Understanding
+The dataset for this Independent project can be found here [http://bit.ly/EcommerceCustomersDataset (Links to an external site.)].  
+
+The dataset consists of 10 numerical and 8 categorical attributes. The 'Revenue' attribute can be used as the class label.
+"Administrative", "Administrative Duration", "Informational", "Informational Duration", "Product Related" and "Product Related Duration" represents the number of different types of pages visited by the visitor in that session and total time spent in each of these page categories. The values of these features are derived from the URL information of the pages visited by the user and updated in real-time when a user takes an action, e.g. moving from one page to another. 
+The "Bounce Rate", "Exit Rate" and "Page Value" features represent the metrics measured by "Google Analytics" for each page in the e-commerce site. 
+The value of the "Bounce Rate" feature for a web page refers to the percentage of visitors who enter the site from that page and then leave ("bounce") without triggering any other requests to the analytics server during that session. 
+The value of the "Exit Rate" feature for a specific web page is calculated as for all pageviews to the page, the percentage that was the last in the session.
+The "Page Value" feature represents the average value for a web page that a user visited before completing an e-commerce transaction. 
+The "Special Day" feature indicates the closeness of the site visiting time to a specific special day (e.g. Mother's Day, Valentine's Day) in which the sessions are more likely to be finalized with the transaction. The value of this attribute is determined by considering the dynamics of e-commerce such as the duration between the order date and delivery date. For example, for Valentina's day, this value takes a nonzero value between February 2 and February 12, zero before and after this date unless it is close to another special day, and its maximum value of 1 on February 8. 
+The dataset also includes the operating system, browser, region, traffic type, visitor type as returning or new visitor, a Boolean value indicating whether the date of the visit is weekend, and month of the year.
+
+## Load Packages and Dataset.
+```{r}
+# Install packages.
+#
+install.packages("tidyverse")
+install.packages("modelr")
+install.packages("broom")
+
+# Load Packages
+library(tidyverse)  # data manipulation and visualization
+library(modelr)     # provides easy pipeline modeling functions
+library(broom)      # helps to tidy up model outputs
+
+# Load data and preview the first 6 rows.
+#
+shop <- read.csv("D:/Moringa/Class/R/IP/IP Week 13/online_shoppers_intention.csv")
+
+head(shop)
+view(shop)
+```
+### 1.Understand the structure of data
+Before you start data cleaning, you need to understand the structure of the data.
+```{r}
+class(shop)
+```
+class(shop) - We use class() function to check that the shop object is a dataframe or a 2-d table having rows and columns. 
+
+```{r}
+dim(shop)
+```
+dim(shop) - We can see the dimensions of the weather dataframe using the dim() function. dim() shows the number of rows (286) followed by number of columns(35).
+
+```{r}
+names(shop)
+```
+names(shop) - We can see the dataframe column names using names() function.
+
+```{r}
+
+str(shop)
+
+```
+str(shop) - It will show a  summary of the object's internal structure. When a dataframe is passed to it, str() displays
+
+
+#### Observations
+We observe that most of the columns are of integer datatype with the exception of Month and VisitorType which are both factors. We also have two columns of Boolean datatype, whci are Weekend and Revenue columns.
+
+
+```{r}
+glimpse(shop)
+```
+glimpse(shop) - The dplyr package has a function called glimpse(). The glimpse() function shows the same information as str() , but you can see as many values per column as will neatly fit on your output terminal.
+
+### 2. Checking The Data.
+Check Top rows of the dataframe.
+```{r}
+head(shop)
+```
+
+Check Bottom rows of the dataframe.
+```{r}
+tail(shop)
+```
+## Univariate Analysis
+### Data Visualization
+#### Histogram Plots of numeric variables.
+Numeric
+```{r}
+admin <- c(shop$Administrative)
+hist(admin)
+```
+
+```{r}
+admin_dur <- c(shop$Administrative_Duration)
+hist(admin_dur)
+```
+```{r}
+inform <- c(shop$Informational)
+hist(inform)
+```
+
+```{r}
+inform_dur <- c(shop$Informational_Duration)
+hist(inform_dur)
+```
+
+```{r}
+prodrel <- c(shop$ProductRelated)
+hist(prodrel)
+```
+
+```{r}
+prodrel_dur <- c(shop$ProductRelated_Duration)
+hist(prodrel_dur)
+```
+```{r}
+Brates <- c(shop$BounceRates)
+hist(Brates)
+```
+
+```{r}
+Erates <- c(shop$ExitRates)
+hist(Erates)
+```
+
+```{r}
+Pvalues <- c(shop$PageValues)
+hist(Pvalues)
+```
+
+```{r}
+sday <- c(shop$SpecialDay)
+hist(sday)
+```
+
+```{r}
+region <- c(shop$Region, breaks=5)
+hist(region)
+```
+
+
+## Bivariate Analysis.
+Administrative Against Region
+
+```{r}
+revenue <- c(shop$Revenue)
+plot(prodrel_dur, region)
+```
+
+
+
+## Tidying data
+Find Null values
+```{r}
+sum(is.na(shop))
+```
+```{r}
+which(is.na(shop))
+
+```
+Check for the data summary.
+```{r}
+summary(shop)
+```
+We observe that all the columns that have null values have equal number of null values which is 14 NA.
+
+
+
+### Dealing with missing values
+The complete.cases() function is used to see which rows have no missing values.
+```{r}
+complete.cases(shop)
+
+```
+
+Keeping only rows with no missing values.
+
+# Keeping only the complete cases.
+# ----
+
+```{r}
+shop[complete.cases(shop), ]
+
+```
+Numerical data
+```{r}
+num <- select_if(shop, is.numeric)
+num
+```
+Categorical data
+
+```{r}
+cat <- select_if(shop, is.factor)
+cat
+
+```
+
+Check for unieu values in Visitor Type.
+```{r}
+unique(shop$VisitorType)
+```
+
+
+## Checking and Dealing with Outliers
+```{r}
+boxplot(num, horizontal=FALSE)
+
+```
+
+
+We have created the following table below, and want to obtain the sum of Variables When the Revenue wa either True or False.
+```{r}
+sumif_table<-aggregate(. ~ Revenue, data=shop, sum)
+sumif_table
+
+```
+
+Filter wher Revenue is True
+```{r}
+Revenue <- shop %>% filter(Revenue=="TRUE")
+
+Revenue
+
+```
+#### Observation
+We observe that the number of entries where the Revenue was True were 1,908.
+
+
+Filter where Revenue is False
+
+```{r}
+F_Revenue <- shop %>% filter(Revenue=="FALSE")
+
+F_Revenue
+
+```
+
+#### Observation
+We observe that the number of entries where the Revenue was False were 10,422. 
+This is almost ten time the number of entries where Revenue was True.
+
+
+### LAbe Encoding Categorical varibles.
+```{r}
+# function which returns function which will encode vectors with values  of 'vec' 
+le = function(vec){
+    levels = sort(unique(vec))
+    function(x){
+        match(x, levels)
+    }
+}
+```
+
+```{r}
+Weekend <- le(c(shop$Weekend))
+
+
+
+Weekend
+```
+
+## Implementing the Solution
+
+###
+
+
+### DBSCAN
+```{r}
+# Importing the required package
+# ---
+# 
+install.packages("dbscan")
+```
+
+
+```{r}
+# Loading the required library
+# ---
+# 
+library("dbscan")
+```
+
+
+# Removing the class label 
+# ---
+```{r}
+m1<-shop[,c(1:17)]
+head(m1)
+
+```
+```{r}
+n <- m1[,c(1:8)]
+
+na.omit(n)
+
+db <- dbscan(n, eps=0.6, MinPts=10)
+
+# Printing out the clustering results
+# ---
+# 
+print(db)
+```
+
+```{r}
+# We also plot our clusters as shown
+# ---
+# The dataset and cluster method of dbscan is used to plot the clusters.
+# 
+na.omit(n)
+hullplot(n,db$cluster)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
